@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   collection, query, where, onSnapshot,
-  doc, deleteDoc, addDoc, updateDoc, getDoc
+  doc, deleteDoc, addDoc, updateDoc, getDoc, increment
 } from 'firebase/firestore';
 import { db, messaging } from '@/lib/firebase';
 import { getMessaging, getToken } from 'firebase/messaging';
@@ -108,6 +108,7 @@ export default function DashboardPage() {
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
   const [partnerData, setPartnerData] = useState(null);
+  const [lastPartnerHeartCount, setLastPartnerHeartCount] = useState(0);
   const { width, height } = useWindowSize();
 
   const showToast = (msg, type = 'success') => {
@@ -262,6 +263,21 @@ export default function DashboardPage() {
     const unsub = onSnapshot(doc(db, 'couples', userData.coupleId), (snap) => {
       if (snap.exists()) {
         const newData = { id: snap.id, ...snap.data() };
+        
+        // --- THINKING OF YOU NOTIFICATION ---
+        const partnerId = newData.members?.find(m => m !== user?.uid);
+        if (partnerId) {
+          const partnerCount = newData.thinkingOfYou?.[partnerId] || 0;
+          setLastPartnerHeartCount(prev => {
+            if (prev > 0 && partnerCount > prev) {
+              const partnerName = newData.memberNames?.[partnerId] || 'Your partner';
+              showToast(`❤️ ${partnerName} is thinking of you!`, 'success');
+            }
+            return partnerCount;
+          });
+        }
+        // ------------------------------------
+
         setCoupleData(prev => {
           // If partner just joined (members went from 1 → 2), show a toast
           if (prev && prev.members?.length === 1 && newData.members?.length === 2) {
@@ -387,6 +403,18 @@ export default function DashboardPage() {
       showToast(`Goal updated to ${hours} hours!`, 'success');
     } catch (err) {
       console.error('Error saving weekly goal:', err);
+    }
+  };
+
+  const handleThinkingOfYou = async () => {
+    if (!user?.uid || !userData?.coupleId) return;
+    try {
+      await updateDoc(doc(db, 'couples', userData.coupleId), {
+        [`thinkingOfYou.${user.uid}`]: increment(1)
+      });
+      showToast('Sent a heart! ❤️', 'success');
+    } catch (err) {
+      console.error('Failed to send heart:', err);
     }
   };
 
@@ -604,9 +632,54 @@ export default function DashboardPage() {
           <div className="glass" style={{ borderRadius: '24px', padding: '24px' }}>
             {/* Tab row */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-              <h2 className="font-display" style={{ fontWeight: 700, fontSize: '16px' }}>
-                Activity Log
-              </h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <h2 className="font-display" style={{ fontWeight: 700, fontSize: '18px', color: 'var(--text)' }}>
+                  Relationship Pulse
+                </h2>
+                <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                  Fresh logs from your shared journey.
+                </p>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button
+                  onClick={handleThinkingOfYou}
+                  style={{
+                    height: '42px',
+                    padding: '0 18px',
+                    borderRadius: '100px',
+                    background: 'rgba(255,107,107,0.1)',
+                    border: '1px solid rgba(255,107,107,0.25)',
+                    color: '#ff6b6b',
+                    fontSize: '13px',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    fontFamily: 'Syne, sans-serif',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = 'rgba(255,107,107,0.15)';
+                    e.currentTarget.style.transform = 'translateY(-2px)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'rgba(255,107,107,0.1)';
+                    e.currentTarget.style.transform = 'translateY(0)';
+                  }}
+                >
+                  <span>Thinking of you</span>
+                  <span style={{ fontSize: '16px' }}>❤️</span>
+                </button>
+                <button
+                  onClick={() => setLogModalOpen(true)}
+                  className="btn-primary"
+                  style={{ height: '42px', padding: '0 20px', borderRadius: '100px', fontSize: '13px' }}
+                >
+                  Log Activity +
+                </button>
+              </div>
               <div style={{ display: 'flex', background: 'rgba(255,255,255,0.04)', borderRadius: '10px', padding: '3px', gap: '2px' }}>
                 {['today', 'week', 'all'].map(tab => (
                   <button
@@ -650,9 +723,30 @@ export default function DashboardPage() {
 
             {/* Weekly chart */}
             <div className="glass" style={{ borderRadius: '24px', padding: '24px' }}>
-              <h2 className="font-display" style={{ fontWeight: 700, fontSize: '16px', marginBottom: '20px' }}>
-                7-Day Overview
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                <h2 className="font-display" style={{ fontWeight: 700, fontSize: '16px' }}>
+                  7-Day Overview
+                </h2>
+                <button
+                  onClick={() => setGoalModalOpen(true)}
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                    padding: '4px 10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    fontFamily: 'Syne, sans-serif',
+                    transition: 'all 0.2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'var(--text)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                >
+                  Set Goal
+                </button>
+              </div>
               {coupleData ? (
                 <WeeklyChart
                   activities={activities}
@@ -943,6 +1037,7 @@ export default function DashboardPage() {
         <LogModal
           user={user}
           userData={userData}
+          coupleData={coupleData}
           today={myToday}
           onClose={() => setLogModalOpen(false)}
           onLogged={() => showToast('Activity logged! 🎉')}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
+import { collection, addDoc, updateDoc, doc, arrayUnion } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const ACTIVITY_TYPES = [
@@ -43,12 +43,44 @@ function formatDateLabel(dateStr) {
  * This is the one source of truth for the current date.
  * No date picker — activities always save to the real current day.
  */
-export default function LogModal({ user, userData, today, onClose, onLogged }) {
+export default function LogModal({ user, userData, coupleData, today, onClose, onLogged }) {
   const [selectedType, setSelectedType] = useState(null);
   const [duration, setDuration]         = useState(60);
   const [notes, setNotes]               = useState('');
   const [submitting, setSubmitting]     = useState(false);
   const [error, setError]               = useState('');
+
+  // Custom activity type creation state
+  const [isAddingCustom, setIsAddingCustom] = useState(false);
+  const [customLabel, setCustomLabel]       = useState('');
+  const [customEmoji, setCustomEmoji]       = useState('✨');
+
+  // Merge static types with custom types from coupleData
+  const allTypes = [...ACTIVITY_TYPES, ...(coupleData?.customActivityTypes || [])];
+
+  const handleAddCustomType = async () => {
+    if (!customLabel.trim()) return;
+    setSubmitting(true);
+    try {
+      const newType = {
+        id: `custom-${Date.now()}`,
+        label: customLabel.trim(),
+        emoji: customEmoji,
+        desc: 'Custom activity'
+      };
+      await updateDoc(doc(db, 'couples', userData.coupleId), {
+        customActivityTypes: arrayUnion(newType)
+      });
+      setSelectedType(newType.id);
+      setIsAddingCustom(false);
+      setCustomLabel('');
+    } catch (err) {
+      console.error('Failed to add custom type:', err);
+      setError('Failed to add custom type.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!selectedType) { setError('Please select an activity type.'); return; }
@@ -123,9 +155,10 @@ export default function LogModal({ user, userData, today, onClose, onLogged }) {
             Activity Type
           </label>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            {ACTIVITY_TYPES.map((t) => (
+            {allTypes.map((t) => (
               <button
                 key={t.id}
+                type="button"
                 onClick={() => setSelectedType(t.id)}
                 style={{
                   display: 'flex',
@@ -151,6 +184,61 @@ export default function LogModal({ user, userData, today, onClose, onLogged }) {
                 </div>
               </button>
             ))}
+
+            {/* Add Custom Button */}
+            {!isAddingCustom ? (
+              <button
+                type="button"
+                onClick={() => setIsAddingCustom(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '12px 14px',
+                  borderRadius: '12px',
+                  border: '1px dashed rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.02)',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  fontFamily: 'Syne, sans-serif',
+                }}
+              >
+                <span>➕</span>
+                <span>Add Custom...</span>
+              </button>
+            ) : (
+              <div style={{
+                gridColumn: 'span 2',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(0,212,255,0.2)',
+                borderRadius: '16px',
+                padding: '16px',
+                marginTop: '4px'
+              }}>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                  <input 
+                    className="input-field" 
+                    placeholder="Emoji" 
+                    value={customEmoji} 
+                    onChange={e => setCustomEmoji(e.target.value)}
+                    style={{ width: '60px', textAlign: 'center' }}
+                  />
+                  <input 
+                    className="input-field" 
+                    placeholder="Activity Name (e.g. Gaming)" 
+                    value={customLabel} 
+                    onChange={e => setCustomLabel(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button className="btn-ghost" style={{ flex: 1, height: '36px', fontSize: '12px' }} onClick={() => setIsAddingCustom(false)}>Cancel</button>
+                  <button className="btn-primary" style={{ flex: 2, height: '36px', fontSize: '12px' }} onClick={handleAddCustomType} disabled={!customLabel.trim()}>Create Type</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
