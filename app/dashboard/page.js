@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   collection, query, where, onSnapshot,
-  doc, deleteDoc, addDoc, updateDoc, getDoc, increment
+  doc, deleteDoc, addDoc, updateDoc, getDoc, increment,
+  serverTimestamp, Timestamp
 } from 'firebase/firestore';
 import { db, messaging } from '@/lib/firebase';
 import { getMessaging, getToken } from 'firebase/messaging';
@@ -13,7 +14,7 @@ import ActivityCalendar from '@/components/ActivityCalendar';
 import TimezoneOverlap from '@/components/TimezoneOverlap';
 import { useAuth } from '@/hooks/useAuth';
 import { useTodayDate, getTodayInTimezone, getLastNDatesInTimezone } from '@/hooks/useTodayDate';
-import { format } from 'date-fns';
+import { format, formatDistanceToNow } from 'date-fns';
 
 import Navbar from '@/components/Navbar';
 import ProgressRing from '@/components/ProgressRing';
@@ -109,6 +110,7 @@ export default function DashboardPage() {
   const [showConfetti, setShowConfetti] = useState(false);
   const [partnerData, setPartnerData] = useState(null);
   const [lastPartnerHeartCount, setLastPartnerHeartCount] = useState(0);
+  const [now, setNow] = useState(Date.now());
   const { width, height } = useWindowSize();
 
   const showToast = (msg, type = 'success') => {
@@ -150,14 +152,18 @@ export default function DashboardPage() {
       // We already have partnerData in state from our new listener
       const partnerToken = partnerData?.fcmToken;
       if (partnerToken) {
-        fetch('/api/nudge', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 
-            token: partnerToken,
-            senderName: userData.name || 'Your partner'
-          })
-        }).catch(err => console.error('Push error:', err));
+        try {
+          fetch('/api/nudge', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              token: partnerToken,
+              senderName: userData.name || 'Your partner'
+            })
+          });
+        } catch (err) {
+          console.error('Error sending nudge notification:', err);
+        }
       }
 
     } catch (err) {
@@ -165,6 +171,37 @@ export default function DashboardPage() {
       showToast('Wait, failed to nudge. Check your internet?', 'error');
     }
   };
+
+  // --- PRESENCE HEARTBEAT ---
+  useEffect(() => {
+    if (!user?.uid) return;
+    
+    const updatePresence = async () => {
+      // Don't update if tab is hidden
+      if (document.visibilityState !== 'visible') return;
+
+      try {
+        await updateDoc(doc(db, 'users', user.uid), {
+          lastActive: serverTimestamp()
+        });
+      } catch (err) {
+        console.error('Error updating presence:', err);
+      }
+    };
+
+    // Initial update
+    updatePresence();
+
+    // Heartbeat every 2 minutes
+    const interval = setInterval(updatePresence, 120000);
+    return () => clearInterval(interval);
+  }, [user?.uid]);
+
+  // Keep 'now' fresh for online status calculation (every 30s)
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     if (!user?.uid || !userData?.coupleId) return;
@@ -849,27 +886,44 @@ export default function DashboardPage() {
                     }}>
                       {(partnerName || 'P').charAt(0).toUpperCase()}
                     </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: '14px', fontFamily: 'Syne, sans-serif' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: '14px', fontFamily: 'Syne, sans-serif', color: 'var(--text)' }}>
                         {partnerName}
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {partnerTodayMinutes > 0
-                          ? `${formatDuration(partnerTodayMinutes)} today · Active`
-                          : 'No activity logged today'}
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {(() => {
+                          const lastActive = partnerData?.lastActive;
+                          let isOnline = false;
+                          let lastActiveTime = 0;
+                          
+                          if (lastActive) {
+                            lastActiveTime = lastActive?.toMillis 
+                              ? lastActive.toMillis() 
+                              : (lastActive?.seconds ? lastActive.seconds * 1000 : new Date(lastActive).getTime());
+                            isOnline = (now - lastActiveTime) < 180000; // 3 mins threshold
+                          }
+                          
+                          return (
+                            <>
+                              <div style={{ 
+                                width: '8px', 
+                                height: '8px', 
+                                borderRadius: '50%', 
+                                background: isOnline ? '#00ff88' : '#666',
+                                boxShadow: isOnline ? '0 0 8px #00ff8880' : 'none',
+                                animation: isOnline ? 'pulse 2s infinite' : 'none',
+                                flexShrink: 0
+                              }} />
+                              <span>
+                                {isOnline ? 'Online' : (lastActiveTime > 0 ? `Seen ${formatDistanceToNow(lastActiveTime)} ago` : 'Offline')}
+                              </span>
+                              <span>·</span>
+                              <span>{formatDuration(partnerTodayMinutes)} today</span>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
-                    {partnerTodayMinutes > 0 && (
-                      <div style={{
-                        marginLeft: 'auto',
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        background: '#00ff88',
-                        boxShadow: '0 0 8px #00ff88',
-                        flexShrink: 0,
-                      }} />
-                    )}
                   </div>
 
                   {/* Partner's today summary */}
