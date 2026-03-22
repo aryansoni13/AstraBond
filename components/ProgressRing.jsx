@@ -68,10 +68,15 @@ export default function ProgressRing({
           <div style={{
             fontFamily: 'Syne, sans-serif',
             fontWeight: 800,
-            fontSize: size > 100 ? '18px' : '14px',
+            fontSize: displayStr.length > 4 
+              ? (size > 100 ? '16px' : '12px') 
+              : (size > 100 ? '20px' : '14px'),
             color: value > 0 ? color : 'var(--text-muted)',
-            letterSpacing: '-0.03em',
+            letterSpacing: '-0.02em',
             lineHeight: 1,
+            textAlign: 'center',
+            padding: '0 10px',
+            wordBreak: 'break-word',
           }}>
             {value > 0 ? displayStr : '—'}
           </div>
