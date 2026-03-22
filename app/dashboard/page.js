@@ -7,7 +7,10 @@ import {
   doc, deleteDoc, addDoc, updateDoc, getDoc
 } from 'firebase/firestore';
 import { db, messaging } from '@/lib/firebase';
-import { getToken } from 'firebase/messaging';
+import { getMessaging, getToken } from 'firebase/messaging';
+import ActivityPieChart from '@/components/ActivityPieChart';
+import ActivityCalendar from '@/components/ActivityCalendar';
+import TimezoneOverlap from '@/components/TimezoneOverlap';
 import { useAuth } from '@/hooks/useAuth';
 import { useTodayDate, getTodayInTimezone, getLastNDatesInTimezone } from '@/hooks/useTodayDate';
 import { format } from 'date-fns';
@@ -104,6 +107,7 @@ export default function DashboardPage() {
   const [countdown, setCountdown] = useState(120); // 2 min in seconds
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [partnerData, setPartnerData] = useState(null);
   const { width, height } = useWindowSize();
 
   const showToast = (msg, type = 'success') => {
@@ -141,9 +145,9 @@ export default function DashboardPage() {
       console.log('Nudge sent successfully!');
       showToast('Nudge sent! 👀', 'success');
 
-      // --- Optional: Trigger Push Notification through API ---
-      const partnerData = await getDoc(doc(db, 'users', partnerId));
-      const partnerToken = partnerData.data()?.fcmToken;
+      // --- Trigger Push Notification through API ---
+      // We already have partnerData in state from our new listener
+      const partnerToken = partnerData?.fcmToken;
       if (partnerToken) {
         fetch('/api/nudge', {
           method: 'POST',
@@ -272,6 +276,27 @@ export default function DashboardPage() {
 
     return () => unsub();
   }, [userData?.coupleId]);
+  
+  // Real-time partner profile listener
+  useEffect(() => {
+    if (!user?.uid || !coupleData?.members) return;
+    const partnerId = coupleData.members.find(m => m !== user.uid);
+    if (!partnerId) {
+      setPartnerData(null);
+      return;
+    }
+
+    const unsub = onSnapshot(doc(db, 'users', partnerId), (snap) => {
+      if (snap.exists()) {
+        setPartnerData({ id: snap.id, ...snap.data() });
+      } else {
+        setPartnerData(null);
+      }
+    });
+
+    return () => unsub();
+  }, [user?.uid, coupleData?.members]);
+
 
   // Real-time activities subscription
   // NOTE: No orderBy here — composite index not deployed yet.
@@ -824,6 +849,62 @@ export default function DashboardPage() {
           </div>
         </div>
       </main>
+
+      {/* === VISUAL INSIGHTS SECTION === */}
+      <section style={{
+        maxWidth: '1200px',
+        margin: '0 auto 60px',
+        padding: '0 20px',
+      }}>
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          marginBottom: '24px'
+        }}>
+          <div style={{ width: '32px', height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+          <h2 style={{ 
+            fontSize: '20px', 
+            fontWeight: 800, 
+            letterSpacing: '-0.02em',
+            fontFamily: 'Syne, sans-serif',
+            color: 'var(--text)',
+            opacity: 0.8
+          }}>
+            Relationship Insights
+          </h2>
+          <div style={{ flex: 1, height: '1px', background: 'rgba(255,255,255,0.1)' }} />
+        </div>
+
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gap: '24px',
+        }}>
+          {/* Top Activities Pie Chart */}
+          <div style={{ minHeight: '400px' }}>
+            <ActivityPieChart activities={activities} />
+          </div>
+
+          {/* Monthly Heatmap */}
+          <div style={{ minHeight: '400px' }}>
+            <ActivityCalendar 
+              activities={activities} 
+              userColor={userData?.color} 
+              partnerColor={partnerData?.color} 
+            />
+          </div>
+
+          {/* Timezone Overlap */}
+          <div style={{ minHeight: '400px' }}>
+            <TimezoneOverlap 
+              myTimezone={userData?.timezone} 
+              partnerTimezone={partnerData?.timezone} 
+              partnerName={partnerData?.displayName || 'Partner'} 
+            />
+          </div>
+        </div>
+      </section>
 
       {/* === DEBUG DATA PILL === */}
       <div style={{
