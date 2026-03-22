@@ -33,6 +33,31 @@ export default function OnboardingPage() {
     if (userData?.coupleId) { router.replace('/dashboard'); return; }
   }, [user, userData, loading, router]);
 
+  // Proactive self-healing: If user doc is missing coupleId but they are in members list
+  useEffect(() => {
+    if (loading || !user || userData?.coupleId) return;
+
+    const checkExistingCouple = async () => {
+      try {
+        const q = query(collection(db, 'couples'), where('members', 'array-contains', user.uid));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          const coupleDoc = snap.docs[0];
+          const cData = coupleDoc.data();
+          await updateDoc(doc(db, 'users', user.uid), {
+            coupleId: coupleDoc.id,
+            color: cData.memberColors?.[user.uid] || 'coral',
+          });
+          // No need to redirect here; the onSnapshot in useAuth will trigger 
+          // a refresh of userData, which triggers the top useEffect.
+        }
+      } catch (err) {
+        console.error('Proactive couple check failed:', err);
+      }
+    };
+    checkExistingCouple();
+  }, [user, userData, loading]);
+
   const handleCreateCouple = async () => {
     if (!user) return;
     setSubmitting(true);
@@ -81,8 +106,14 @@ export default function OnboardingPage() {
       const coupleData = coupleDoc.data();
 
       if (coupleData.members.includes(user.uid)) {
-        setError("You're already in this couple!");
-        setSubmitting(false);
+        // SELF-HEALING: User is a member of the couple but their user doc was missing the coupleId.
+        // Repair the link and redirect.
+        await updateDoc(doc(db, 'users', user.uid), {
+          coupleId: coupleDoc.id,
+          color: coupleData.memberColors?.[user.uid] || 'coral',
+        });
+        await refreshUserData();
+        router.replace('/dashboard');
         return;
       }
 
