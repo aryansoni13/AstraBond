@@ -60,5 +60,13 @@ service cloud.firestore {
       allow delete: if request.auth != null &&
         request.auth.uid == resource.data.toUserId;
     }
+
+    // Challenges: blind goals set for partners
+    match /challenges/{challengeId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.creatorId;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null && request.auth.uid == resource.data.creatorId;
+    }
   }
 }

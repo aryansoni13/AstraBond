@@ -455,6 +455,20 @@ textarea.input-field {
   background: rgba(255, 255, 255, 0.14);
 }
 
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 212, 255, 0.15);
+  border-radius: 10px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 212, 255, 0.25);
+}
+
 /* ==================== ANIMATIONS ==================== */
 @keyframes fadeInUp {
   from { opacity: 0; transform: translateY(24px); }

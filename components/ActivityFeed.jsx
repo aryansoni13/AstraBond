@@ -32,6 +32,13 @@ function formatDate(dateStr) {
   } catch { return dateStr; }
 }
 
+function formatTime(iso) {
+  if (!iso) return '';
+  try {
+    return format(new Date(iso), 'h:mm a');
+  } catch { return ''; }
+}
+
 export default function ActivityFeed({ activities, currentUserId, limit = 20 }) {
   const displayed = activities.slice(0, limit);
 
@@ -201,6 +208,20 @@ export default function ActivityFeed({ activities, currentUserId, limit = 20 }) 
 
             {/* Right side */}
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              {activity.isParallel && (
+                <div style={{
+                  fontSize: '10px',
+                  fontWeight: 900,
+                  color: '#ff4d4d',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: '4px',
+                  animation: 'pulse 2s infinite',
+                  fontFamily: 'Syne, sans-serif'
+                }}>
+                  Parallel 🔥
+                </div>
+              )}
               <div style={{
                 fontFamily: 'Syne, sans-serif',
                 fontWeight: 800,
@@ -210,8 +231,8 @@ export default function ActivityFeed({ activities, currentUserId, limit = 20 }) 
               }}>
                 {formatDuration(activity.duration)}
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                {formatDate(activity.date)}
+              <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                {activity.startTime ? formatTime(activity.startTime) : formatDate(activity.date)}
               </div>
             </div>
           </div>

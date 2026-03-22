@@ -1,7 +1,10 @@
 'use client';
 
 import { useState } from 'react';
-import { collection, addDoc, updateDoc, doc, arrayUnion } from 'firebase/firestore';
+import { 
+  collection, addDoc, updateDoc, doc, arrayUnion, 
+  query, where, getDocs 
+} from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 
 const ACTIVITY_TYPES = [
@@ -49,6 +52,14 @@ export default function LogModal({ user, userData, coupleData, today, onClose, o
   const [notes, setNotes]               = useState('');
   const [submitting, setSubmitting]     = useState(false);
   const [error, setError]               = useState('');
+  
+  // Default startTime to (now - duration)
+  const [startTime, setStartTime] = useState(() => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - duration);
+    // Format for datetime-local input: YYYY-MM-DDTHH:mm
+    return now.toISOString().slice(0, 16);
+  });
 
   // Custom activity type creation state
   const [isAddingCustom, setIsAddingCustom] = useState(false);
@@ -88,19 +99,100 @@ export default function LogModal({ user, userData, coupleData, today, onClose, o
     setError('');
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'activities'), {
+      const myStart = new Date(startTime).getTime();
+      const myEnd = myStart + duration * 60000;
+      const partnerId = coupleData?.members?.find(m => m !== user.uid);
+      
+      let isParallel = false;
+      if (partnerId) {
+        // Query for partner's activities today to check for overlap
+        const q = query(
+          collection(db, 'activities'),
+          where('coupleId', '==', userData.coupleId),
+          where('userId', '==', partnerId),
+          where('date', '==', today)
+        );
+        const snap = await getDocs(q);
+        snap.forEach(d => {
+          const p = d.data();
+          if (p.startTime) {
+            const pStart = new Date(p.startTime).getTime();
+            const pEnd = pStart + p.duration * 60000;
+            // Overlap condition: (StartA < EndB) && (EndA > StartB)
+            if (myStart < pEnd && myEnd > pStart) {
+              isParallel = true;
+            }
+          }
+        });
+      }
+
+      const newActId = (await addDoc(collection(db, 'activities'), {
         userId:       user.uid,
         coupleId:     userData.coupleId,
         type:         selectedType,
         duration,
         notes:        notes.trim(),
-        // date is always today in the user's local timezone — sourced from useTodayDate()
         date:         today,
+        startTime,
+        isParallel,
         userName:     userData.displayName || 'You',
         userColor:    userData.color || 'cyan',
         userTimezone: userData.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone || null,
         createdAt:    new Date().toISOString(),
-      });
+      })).id;
+
+      // --- CHECK FOR BLIND CHALLENGE COMPLETION ---
+      const challengesQuery = query(
+        collection(db, 'challenges'),
+        where('coupleId', '==', userData.coupleId),
+        where('targetId', '==', user.uid),
+        where('status', '==', 'active'),
+        where('type', '==', selectedType)
+      );
+      const challengeSnap = await getDocs(challengesQuery);
+      
+      for (const cDoc of challengeSnap.docs) {
+        const challenge = cDoc.data();
+        
+        // Sum all activities of this type for this user since challenge was created
+        const allActsQuery = query(
+          collection(db, 'activities'),
+          where('coupleId', '==', userData.coupleId),
+          where('userId', '==', user.uid),
+          where('type', '==', selectedType)
+        );
+        const allActsSnap = await getDocs(allActsQuery);
+        
+        // Start with the current activity we just logged
+        let totalMinutes = duration;
+        
+        // Fallback for creation date: server timestamp or ISO fallback
+        const challengeCreatedDate = challenge.createdAt?.toDate() || 
+                                     (challenge.createdAtISO ? new Date(challenge.createdAtISO) : new Date(0));
+        
+        // Safety: subtract 10 seconds to account for minor clock drift
+        const comparisonDate = new Date(challengeCreatedDate.getTime() - 10000);
+        
+        allActsSnap.forEach(aDoc => {
+          // Don't count the current activity twice if it's already in the query result
+          if (aDoc.id === newActId) return;
+
+          const act = aDoc.data();
+          const actCreated = new Date(act.createdAt);
+          if (actCreated >= comparisonDate) {
+            totalMinutes += act.duration;
+          }
+        });
+
+        if (totalMinutes >= challenge.targetMinutes) {
+          await updateDoc(doc(db, 'challenges', cDoc.id), {
+            status: 'completed',
+            completedAt: new Date().toISOString()
+          });
+        }
+      }
+      // --------------------------------------------
+
       onLogged?.();
       onClose();
     } catch (err) {
@@ -242,30 +334,45 @@ export default function LogModal({ user, userData, coupleData, today, onClose, o
           </div>
         </div>
 
-        {/* Duration */}
-        <div style={{ marginBottom: '20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-            <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'Syne, sans-serif' }}>
-              Duration
-            </label>
-            <span style={{ fontFamily: 'Syne, sans-serif', fontWeight: 800, fontSize: '16px', color: 'var(--cyan)' }}>
-              {formatDuration(duration)}
-            </span>
+        {/* Duration & Start Time */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'Syne, sans-serif' }}>
+                Duration
+              </label>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--cyan)', fontFamily: 'Syne, sans-serif' }}>
+                {formatDuration(duration)}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="5"
+              max="480"
+              step="5"
+              value={duration}
+              onChange={(e) => setDuration(parseInt(e.target.value))}
+              className="duration-slider"
+            />
           </div>
-          <input
-            type="range"
-            className="duration-slider"
-            min={15}
-            max={480}
-            step={15}
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-          />
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>15 min</span>
-            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>8 hrs</span>
+
+          <div>
+            <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', fontFamily: 'Syne, sans-serif', marginBottom: '10px' }}>
+              Start Time
+            </label>
+            <input
+              type="datetime-local"
+              value={startTime}
+              onChange={(e) => setStartTime(e.target.value)}
+              className="input-field"
+              style={{ padding: '10px 14px', fontSize: '12px', height: '42px' }}
+            />
           </div>
         </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '-18px', marginBottom: '20px' }}>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>5 min</span>
+            <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>8 hrs</span>
+          </div>
 
         {/* Notes */}
         <div style={{ marginBottom: '24px' }}>
