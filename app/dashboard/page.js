@@ -882,8 +882,18 @@ export default function DashboardPage() {
 
         <div className="animate-fade-up animate-fade-up-delay-3 flex flex-col lg:grid lg:grid-cols-[1.5fr_1fr] gap-5 items-start">
           {/* Main Column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "20px", width: "100%" }}>
-            <div className="glass" style={{ borderRadius: "24px", padding: "24px" }}>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "20px",
+              width: "100%",
+            }}
+          >
+            <div
+              className="glass"
+              style={{ borderRadius: "24px", padding: "24px" }}
+            >
               {/* Tab row */}
               <div
                 style={{
@@ -895,24 +905,122 @@ export default function DashboardPage() {
                   gap: "10px",
                 }}
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  <h2 className="font-display" style={{ fontWeight: 700, fontSize: "18px", color: "var(--text)" }}>Relationship Pulse</h2>
-                  <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>Fresh logs from your shared journey.</p>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "4px",
+                  }}
+                >
+                  <h2
+                    className="font-display"
+                    style={{
+                      fontWeight: 700,
+                      fontSize: "18px",
+                      color: "var(--text)",
+                    }}
+                  >
+                    Relationship Pulse
+                  </h2>
+                  <p style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                    Fresh logs from your shared journey.
+                  </p>
                 </div>
 
                 <div style={{ display: "flex", gap: "10px" }}>
-                  <button onClick={handleThinkingOfYou} style={{ height: "42px", padding: "0 18px", borderRadius: "100px", background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.25)", color: "#ff6b6b", fontSize: "13px", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontFamily: "Syne, sans-serif", transition: "all 0.2s" }}>
-                    <span>Thinking of you</span><span style={{ fontSize: "16px" }}>❤️</span>
+                  <button
+                    onClick={handleThinkingOfYou}
+                    style={{
+                      height: "42px",
+                      padding: "0 18px",
+                      borderRadius: "100px",
+                      background: "rgba(255,107,107,0.1)",
+                      border: "1px solid rgba(255,107,107,0.25)",
+                      color: "#ff6b6b",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      cursor: "pointer",
+                      fontFamily: "Syne, sans-serif",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <span>Thinking of you</span>
+                    <span style={{ fontSize: "16px" }}>❤️</span>
                   </button>
-                  <button onClick={() => setChallengeModalOpen(true)} style={{ height: "42px", padding: "0 18px", borderRadius: "100px", background: "rgba(0,212,255,0.08)", border: "1px solid rgba(0,212,255,0.25)", color: "var(--cyan)", fontSize: "13px", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontFamily: "Syne, sans-serif", transition: "all 0.2s" }}>
-                    <span>Challenge</span><span style={{ fontSize: "16px" }}>🤫</span>
+                  <button
+                    onClick={() => setChallengeModalOpen(true)}
+                    style={{
+                      height: "42px",
+                      padding: "0 18px",
+                      borderRadius: "100px",
+                      background: "rgba(0,212,255,0.08)",
+                      border: "1px solid rgba(0,212,255,0.25)",
+                      color: "var(--cyan)",
+                      fontSize: "13px",
+                      fontWeight: 800,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      cursor: "pointer",
+                      fontFamily: "Syne, sans-serif",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    <span>Challenge</span>
+                    <span style={{ fontSize: "16px" }}>🤫</span>
                   </button>
-                  <button onClick={() => setLogModalOpen(true)} className="btn-primary" style={{ height: "42px", padding: "0 20px", borderRadius: "100px", fontSize: "13px" }}>Log Activity +</button>
+                  <button
+                    onClick={() => setLogModalOpen(true)}
+                    className="btn-primary"
+                    style={{
+                      height: "42px",
+                      padding: "0 20px",
+                      borderRadius: "100px",
+                      fontSize: "13px",
+                    }}
+                  >
+                    Log Activity +
+                  </button>
                 </div>
-                
-                <div style={{ display: "flex", background: "rgba(255,255,255,0.04)", borderRadius: "10px", padding: "3px", gap: "2px" }}>
+
+                <div
+                  style={{
+                    display: "flex",
+                    background: "rgba(255,255,255,0.04)",
+                    borderRadius: "10px",
+                    padding: "3px",
+                    gap: "2px",
+                  }}
+                >
                   {["today", "week", "all"].map((tab) => (
-                    <button key={tab} onClick={() => setActiveTab(tab)} style={{ padding: "6px 12px", borderRadius: "8px", border: "none", fontSize: "12px", fontWeight: 700, fontFamily: "Syne, sans-serif", cursor: "pointer", background: activeTab === tab ? "rgba(255,255,255,0.1)" : "transparent", color: activeTab === tab ? "var(--text)" : "var(--text-muted)", transition: "all 0.15s", textTransform: "capitalize" }}>{tab}</button>
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        border: "none",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        fontFamily: "Syne, sans-serif",
+                        cursor: "pointer",
+                        background:
+                          activeTab === tab
+                            ? "rgba(255,255,255,0.1)"
+                            : "transparent",
+                        color:
+                          activeTab === tab
+                            ? "var(--text)"
+                            : "var(--text-muted)",
+                        transition: "all 0.15s",
+                        textTransform: "capitalize",
+                      }}
+                    >
+                      {tab}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -922,32 +1030,101 @@ export default function DashboardPage() {
                   <div className="spinner" style={{ margin: "0 auto" }} />
                 </div>
               ) : (
-                <ActivityFeed activities={feedActivities} currentUserId={user.uid} limit={15} />
+                <ActivityFeed
+                  activities={feedActivities}
+                  currentUserId={user.uid}
+                  limit={15}
+                />
               )}
             </div>
 
             {/* Today's Mix & Partner Status Row */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: "20px" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
+                gap: "20px",
+              }}
+            >
               {/* Today's Activity Breakdown */}
               {todayBreakdown.length > 0 && (
-                <div className="glass" style={{ borderRadius: "24px", padding: "24px" }}>
-                  <h2 className="font-display" style={{ fontWeight: 700, fontSize: "16px", marginBottom: "16px" }}>Today's Mix</h2>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div
+                  className="glass"
+                  style={{ borderRadius: "24px", padding: "24px" }}
+                >
+                  <h2
+                    className="font-display"
+                    style={{
+                      fontWeight: 700,
+                      fontSize: "16px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    Today's Mix
+                  </h2>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "10px",
+                    }}
+                  >
                     {todayBreakdown.map(([type, mins]) => {
                       const meta = TYPE_META[type] || TYPE_META.other;
-                      const pct = Math.round((mins / combinedTodayMinutes) * 100);
+                      const pct = Math.round(
+                        (mins / combinedTodayMinutes) * 100,
+                      );
                       return (
                         <div key={type}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "5px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "13px", fontWeight: 600 }}>
-                              <span>{meta.emoji}</span><span>{meta.label}</span>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "space-between",
+                              marginBottom: "5px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                fontSize: "13px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              <span>{meta.emoji}</span>
+                              <span>{meta.label}</span>
                             </div>
-                            <span style={{ fontSize: "12px", color: "var(--text-muted)", fontFamily: "Syne, sans-serif", fontWeight: 700 }}>
+                            <span
+                              style={{
+                                fontSize: "12px",
+                                color: "var(--text-muted)",
+                                fontFamily: "Syne, sans-serif",
+                                fontWeight: 700,
+                              }}
+                            >
                               {formatDuration(mins)} · {pct}%
                             </span>
                           </div>
-                          <div style={{ height: "5px", background: "rgba(255,255,255,0.05)", borderRadius: "100px", overflow: "hidden" }}>
-                            <div style={{ height: "100%", width: `${pct}%`, background: meta.color, borderRadius: "100px", transition: "width 1s ease", boxShadow: `0 0 6px ${meta.color}60` }} />
+                          <div
+                            style={{
+                              height: "5px",
+                              background: "rgba(255,255,255,0.05)",
+                              borderRadius: "100px",
+                              overflow: "hidden",
+                            }}
+                          >
+                            <div
+                              style={{
+                                height: "100%",
+                                width: `${pct}%`,
+                                background: meta.color,
+                                borderRadius: "100px",
+                                transition: "width 1s ease",
+                                boxShadow: `0 0 6px ${meta.color}60`,
+                              }}
+                            />
                           </div>
                         </div>
                       );
@@ -957,24 +1134,105 @@ export default function DashboardPage() {
               )}
 
               {/* Partner status */}
-              <div className="glass" style={{ borderRadius: "24px", padding: "24px" }}>
-                <h2 className="font-display" style={{ fontWeight: 700, fontSize: "16px", marginBottom: "14px" }}>Partner Status</h2>
+              <div
+                className="glass"
+                style={{ borderRadius: "24px", padding: "24px" }}
+              >
+                <h2
+                  className="font-display"
+                  style={{
+                    fontWeight: 700,
+                    fontSize: "16px",
+                    marginBottom: "14px",
+                  }}
+                >
+                  Partner Status
+                </h2>
                 {coupleData?.members?.length === 1 ? (
                   <div style={{ textAlign: "center", padding: "10px" }}>
-                    <p style={{ fontSize: "13px", color: "var(--text-muted)", marginBottom: "12px" }}>Invite your partner to start tracking together!</p>
-                    <div style={{ background: "rgba(0,212,255,0.06)", border: "1px solid rgba(0,212,255,0.2)", borderRadius: "12px", padding: "14px", textAlign: "center" }}>
-                      <p style={{ fontSize: "11px", color: "var(--text-muted)", fontFamily: "Syne, sans-serif", fontWeight: 600, letterSpacing: "0.05em", marginBottom: "6px" }}>INVITE CODE</p>
-                      <div style={{ fontFamily: "Syne, sans-serif", fontWeight: 800, fontSize: "20px", letterSpacing: "0.25em", color: "var(--cyan)", marginBottom: "10px" }}>{coupleData.inviteCode}</div>
+                    <p
+                      style={{
+                        fontSize: "13px",
+                        color: "var(--text-muted)",
+                        marginBottom: "12px",
+                      }}
+                    >
+                      Invite your partner to start tracking together!
+                    </p>
+                    <div
+                      style={{
+                        background: "rgba(0,212,255,0.06)",
+                        border: "1px solid rgba(0,212,255,0.2)",
+                        borderRadius: "12px",
+                        padding: "14px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <p
+                        style={{
+                          fontSize: "11px",
+                          color: "var(--text-muted)",
+                          fontFamily: "Syne, sans-serif",
+                          fontWeight: 600,
+                          letterSpacing: "0.05em",
+                          marginBottom: "6px",
+                        }}
+                      >
+                        INVITE CODE
+                      </p>
+                      <div
+                        style={{
+                          fontFamily: "Syne, sans-serif",
+                          fontWeight: 800,
+                          fontSize: "20px",
+                          letterSpacing: "0.25em",
+                          color: "var(--cyan)",
+                          marginBottom: "10px",
+                        }}
+                      >
+                        {coupleData.inviteCode}
+                      </div>
                     </div>
                   </div>
                 ) : (
                   <div>
                     {partnerData ? (
-                      <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>
-                        <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: partnerData.color || "var(--coral)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, color: "#000", fontSize: "18px", textTransform: "uppercase" }}>{partnerData.displayName?.[0] || "?"}</div>
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "12px",
+                          marginBottom: "16px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: "48px",
+                            height: "48px",
+                            borderRadius: "50%",
+                            background: partnerData.color || "var(--coral)",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontWeight: 800,
+                            color: "#000",
+                            fontSize: "18px",
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {partnerData.displayName?.[0] || "?"}
+                        </div>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: "15px" }}>{partnerData.displayName}</div>
-                          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                          <div style={{ fontWeight: 700, fontSize: "15px" }}>
+                            {partnerData.displayName}
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "6px",
+                            }}
+                          >
                             {(() => {
                               const lastActive = partnerData?.lastActive;
                               let isOnline = false;
@@ -988,39 +1246,107 @@ export default function DashboardPage() {
                               }
                               return (
                                 <>
-                                  <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: isOnline ? "#00ff9d" : "#6b6b8a" }} />
-                                  <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>{isOnline ? "Online" : "Away"} · {formatDuration(partnerTodayMinutes)} today</span>
+                                  <div
+                                    style={{
+                                      width: "8px",
+                                      height: "8px",
+                                      borderRadius: "50%",
+                                      background: isOnline
+                                        ? "#00ff9d"
+                                        : "#6b6b8a",
+                                    }}
+                                  />
+                                  <span
+                                    style={{
+                                      fontSize: "11px",
+                                      color: "var(--text-muted)",
+                                    }}
+                                  >
+                                    {isOnline ? "Online" : "Away"} ·{" "}
+                                    {formatDuration(partnerTodayMinutes)} today
+                                  </span>
                                 </>
                               );
                             })()}
                           </div>
-
                         </div>
                       </div>
                     ) : (
-                      <div className="spinner" style={{ width: "20px", height: "20px", marginBottom: "12px" }} />
+                      <div
+                        className="spinner"
+                        style={{
+                          width: "20px",
+                          height: "20px",
+                          marginBottom: "12px",
+                        }}
+                      />
                     )}
-                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "10px",
+                      }}
+                    >
                       {partnerTodayActivities.length > 0 ? (
                         <>
                           {partnerTodayActivities.slice(0, 3).map((act, i) => {
                             const meta = TYPE_META[act.type] || TYPE_META.other;
                             return (
-                              <div key={i} style={{ padding: "10px", background: "rgba(255,255,255,0.03)", borderRadius: "12px", fontSize: "12px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <div
+                                key={i}
+                                style={{
+                                  padding: "10px",
+                                  background: "rgba(255,255,255,0.03)",
+                                  borderRadius: "12px",
+                                  fontSize: "12px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: "8px",
+                                  }}
+                                >
                                   <span>{meta.emoji}</span>
-                                  <span style={{ fontWeight: 600 }}>{meta.label}</span>
+                                  <span style={{ fontWeight: 600 }}>
+                                    {meta.label}
+                                  </span>
                                 </div>
-                                <span style={{ color: "var(--text-muted)" }}>{formatDuration(act.duration)}</span>
+                                <span style={{ color: "var(--text-muted)" }}>
+                                  {formatDuration(act.duration)}
+                                </span>
                               </div>
                             );
                           })}
                           {partnerTodayActivities.length > 3 && (
-                            <div style={{ textAlign: "center", fontSize: "10px", color: "var(--text-muted)", marginTop: "4px" }}>+{partnerTodayActivities.length - 3} more</div>
+                            <div
+                              style={{
+                                textAlign: "center",
+                                fontSize: "10px",
+                                color: "var(--text-muted)",
+                                marginTop: "4px",
+                              }}
+                            >
+                              +{partnerTodayActivities.length - 3} more
+                            </div>
                           )}
                         </>
                       ) : (
-                        <div style={{ textAlign: "center", padding: "12px", background: "rgba(255,255,255,0.02)", borderRadius: "12px", fontSize: "12px", color: "var(--text-muted)" }}>
+                        <div
+                          style={{
+                            textAlign: "center",
+                            padding: "12px",
+                            background: "rgba(255,255,255,0.02)",
+                            borderRadius: "12px",
+                            fontSize: "12px",
+                            color: "var(--text-muted)",
+                          }}
+                        >
                           No activity logged today 💤
                         </div>
                       )}
