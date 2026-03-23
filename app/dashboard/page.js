@@ -314,6 +314,18 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [inactivityWarning]);
 
+  // --- TIMEZONE SELF-HEALING SYNC ---
+  useEffect(() => {
+    if (!user?.uid || !userData) return;
+    const currentTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (userData.timezone !== currentTZ) {
+      console.log("Updating timezone to:", currentTZ);
+      updateDoc(doc(db, "users", user.uid), {
+        timezone: currentTZ,
+      }).catch(err => console.error("Failed to sync timezone:", err));
+    }
+  }, [user?.uid, userData?.timezone]);
+
   // Dismiss warning on any activity
   useEffect(() => {
     if (!inactivityWarning) return;
@@ -530,12 +542,12 @@ export default function DashboardPage() {
   // === Derived Stats ===
   // Each user's 'today' is their OWN timezone — correct for long-distance couples
   const myTimezone = userData?.timezone || null;
+  // Determine partner's timezone
+  // Priority: 1. partnerData.timezone (direct from their user doc)
+  //           2. partnerActivity.userTimezone (fallback from activity log)
   const partnerId = coupleData?.members?.find((m) => m !== user?.uid);
-
-  // Determine partner's timezone from their stored activity data or coupleData
-  // We look at the most recent partner activity's recorded timezone
   const partnerActivity = activities.find((a) => a.userId === partnerId);
-  const partnerTimezone = partnerActivity?.userTimezone || null;
+  const partnerTimezone = partnerData?.timezone || partnerActivity?.userTimezone || null;
   const partnerToday = getTodayInTimezone(partnerTimezone);
 
   const myTodayActivities = activities.filter(
@@ -1761,8 +1773,8 @@ export default function DashboardPage() {
           <div style={{ minHeight: "400px" }}>
             <TimezoneOverlap
               myTimezone={userData?.timezone}
-              partnerTimezone={partnerData?.timezone}
-              partnerName={partnerData?.displayName || "Partner"}
+              partnerTimezone={partnerTimezone}
+              partnerName={partnerName}
             />
           </div>
         </div>

@@ -12,8 +12,12 @@ export default function TimezoneOverlap({ myTimezone, partnerTimezone, partnerNa
   }, []);
 
   const getTimeInZone = (tz) => {
-    if (!tz) return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    return now.toLocaleTimeString([], { timeZone: tz, hour: '2-digit', minute: '2-digit' });
+    try {
+      if (!tz) return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return now.toLocaleTimeString([], { timeZone: tz, hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
   };
 
   const currentHourInZone = (tz) => {
@@ -61,7 +65,7 @@ export default function TimezoneOverlap({ myTimezone, partnerTimezone, partnerNa
             {partnerName}'s Time
           </p>
           <p style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text)', fontFamily: 'Syne, sans-serif' }}>
-            {getTimeInZone(partnerTimezone)}
+            {partnerTimezone ? getTimeInZone(partnerTimezone) : 'Syncing...'}
           </p>
         </div>
       </div>
