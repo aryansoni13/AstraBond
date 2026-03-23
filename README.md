@@ -9,6 +9,10 @@ Log your daily activities, track each other's progress, and grow together — pr
 
 - **Couple-only privacy** — only you and your partner see each other's data
 - **Real-time sync** — activities appear instantly across both devices
+- **Daily Wind-Down Check-In** — evening prompt to rate your day, set a mood emoji, and leave a love note
+- **Relationship Data Export** — download your entire history as a CSV or a beautiful PDF report
+- **Timezone Intelligence** — accurate "today" and streak tracking for long-distance partners
+- **Responsive Mobile Layout** — seamless experience on phones with adaptive fluid grids and modals
 - **Daily progress rings** — animated circular trackers for each partner
 - **7-day bar chart** — side-by-side weekly overview
 - **Activity types** — Work, Exercise, Learning, Creative, Self-care, Social, Chores, Other
@@ -18,7 +22,7 @@ Log your daily activities, track each other's progress, and grow together — pr
 - **Today's mix breakdown** — percentage bars per activity category
 - **Invite system** — share an 8-character code to connect couples
 - **Multiple couples supported** — each couple only sees their own data
-- **Mobile-friendly** — bottom-sheet modal, responsive layout
+- **Nudges** — instantly ping your partner with an FCM push notification and toast
 
 ---
 
@@ -65,7 +69,7 @@ firebase login
 firebase use --add   # select your project
 ```
 
-Deploy rules and indexes:
+Deploy rules and indexes (this is required for Check-ins and Export!):
 ```bash
 firebase deploy --only firestore
 ```
@@ -86,23 +90,27 @@ Open [http://localhost:3000](http://localhost:3000) 🎉
 bond-tracker/
 ├── app/
 │   ├── globals.css          # Design system — aurora, glass, buttons
-│   ├── layout.js            # Root layout + Google Fonts
+│   ├── layout.js            # Root layout + Google Fonts + Viewport Ext
 │   ├── page.js              # Auth page (Login / Sign Up)
 │   ├── onboarding/
 │   │   └── page.js          # Create or join a couple
 │   └── dashboard/
 │       └── page.js          # Main dashboard (real-time)
 ├── components/
-│   ├── Navbar.jsx            # Sticky top navigation
+│   ├── Navbar.jsx            # Top nav + Export Tools
 │   ├── ProgressRing.jsx      # Animated SVG ring for daily goal
 │   ├── ActivityFeed.jsx      # Scrollable activity list
 │   ├── WeeklyChart.jsx       # Recharts bar chart (7 days)
-│   └── LogModal.jsx          # Bottom-sheet activity logger
+│   ├── LogModal.jsx          # Bottom-sheet activity logger
+│   ├── WindDownModal.jsx     # Evening check-in form
+│   └── WindDownBanner.jsx    # Unread partner check-in display
 ├── hooks/
-│   └── useAuth.js            # Firebase auth + user data hook
+│   ├── useAuth.js            # Firebase auth + user data hook
+│   └── useTodayDate.js       # Timezone-aware date calculations
 ├── lib/
-│   └── firebase.js           # Firebase app initialization
-├── firestore.rules           # Security rules (couple-scoped)
+│   ├── firebase.js           # Firebase app API initialization
+│   └── exportUtils.js        # CSV & PDF generation logic
+├── firestore.rules           # Security rules (couple-scoped & checkins)
 ├── firestore.indexes.json    # Composite indexes for queries
 ├── firebase.json             # Firebase project config
 ├── .env.local.example        # Environment variable template
@@ -118,7 +126,7 @@ Firestore security rules ensure:
 
 - Users can only read/write **their own** user profile
 - Couple documents can only be read/updated by **current members**
-- Activities are only readable by members of the **same couple**
+- Activities and Check-ins are only readable by members of the **same couple**
 - No cross-couple data leakage — even if 100 couples use the app
 
 ---
