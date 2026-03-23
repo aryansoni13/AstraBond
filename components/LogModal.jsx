@@ -55,10 +55,16 @@ export default function LogModal({ user, userData, coupleData, today, onClose, o
   
   // Default startTime to (now - duration)
   const [startTime, setStartTime] = useState(() => {
-    const now = new Date();
-    now.setMinutes(now.getMinutes() - duration);
-    // Format for datetime-local input: YYYY-MM-DDTHH:mm
-    return now.toISOString().slice(0, 16);
+    const dt = new Date();
+    dt.setMinutes(dt.getMinutes() - duration);
+    
+    // Format for datetime-local input: YYYY-MM-DDTHH:mm (MUST BE LOCAL TIME)
+    const y = dt.getFullYear();
+    const m = String(dt.getMonth() + 1).padStart(2, '0');
+    const d = String(dt.getDate()).padStart(2, '0');
+    const hh = String(dt.getHours()).padStart(2, '0');
+    const mm = String(dt.getMinutes()).padStart(2, '0');
+    return `${y}-${m}-${d}T${hh}:${mm}`;
   });
 
   // Custom activity type creation state
@@ -133,7 +139,7 @@ export default function LogModal({ user, userData, coupleData, today, onClose, o
         duration,
         notes:        notes.trim(),
         date:         today,
-        startTime,
+        startTime:    new Date(startTime).toISOString(),
         isParallel,
         userName:     userData.displayName || 'You',
         userColor:    userData.color || 'cyan',

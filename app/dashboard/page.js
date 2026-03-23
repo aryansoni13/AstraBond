@@ -40,6 +40,9 @@ import { useInactivityLogout } from "@/hooks/useInactivityLogout";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 
+import WindDownModal from "@/components/WindDownModal";
+import WindDownBanner from "@/components/WindDownBanner";
+
 const TYPE_META = {
   work: { emoji: "💼", label: "Work", color: "#00d4ff" },
   exercise: { emoji: "🏋️", label: "Exercise", color: "#00ff9d" },
@@ -134,6 +137,11 @@ export default function DashboardPage() {
   const [partnerData, setPartnerData] = useState(null);
   const [lastPartnerHeartCount, setLastPartnerHeartCount] = useState(0);
   const { width, height } = useWindowSize();
+
+  // Wind-Down Check-In state
+  const [showWindDownModal, setShowWindDownModal] = useState(false);
+  const [partnerCheckin, setPartnerCheckin] = useState(null);
+  const [hasCheckedInToday, setHasCheckedInToday] = useState(false);
 
   const showToast = (msg, type = "success") => {
     setToast({ msg, type });
@@ -455,6 +463,68 @@ export default function DashboardPage() {
     return () => unsub();
   }, [userData?.coupleId]);
 
+  // --- WIND-DOWN CHECK-IN LOGIC ---
+  
+  // 1. Fetch partner's latest unseen check-in
+  useEffect(() => {
+    if (!user?.uid || !userData?.coupleId) return;
+    const partnerId = coupleData?.members?.find((m) => m !== user.uid);
+    if (!partnerId) return;
+
+    const q = query(
+      collection(db, "checkins"),
+      where("userId", "==", partnerId),
+      where("seenByPartner", "==", false)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        // Get the latest unseen check-in
+        const docs = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => (b.createdAt > a.createdAt ? 1 : -1));
+        setPartnerCheckin(docs[0]);
+      } else {
+        setPartnerCheckin(null);
+      }
+    });
+
+    return () => unsub();
+  }, [user?.uid, userData?.coupleId, coupleData?.members]);
+
+  // 2. Check if user already checked in today
+  useEffect(() => {
+    if (!user?.uid || !myToday) return;
+
+    const q = query(
+      collection(db, "checkins"),
+      where("userId", "==", user.uid),
+      where("date", "==", myToday)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      setHasCheckedInToday(!snap.empty);
+    });
+
+    return () => unsub();
+  }, [user?.uid, myToday]);
+
+  // 3. Nightly prompt trigger
+  useEffect(() => {
+    if (hasCheckedInToday) return;
+
+    const checkTime = () => {
+      const hours = new Date().getHours();
+      // Prompt after 9 PM (21:00)
+      if (hours >= 21) {
+        setShowWindDownModal(true);
+      }
+    };
+
+    checkTime();
+    const interval = setInterval(checkTime, 60000); // Check every minute
+    return () => clearInterval(interval);
+  }, [hasCheckedInToday]);
+
   // Ensure we don't return early before hooks run!
 
   // === Derived Stats ===
@@ -624,7 +694,7 @@ export default function DashboardPage() {
         />
       )}
 
-      <Navbar userData={userData} coupleData={coupleData} />
+       <Navbar userData={userData} coupleData={coupleData} />
 
       <main
         style={{
@@ -633,17 +703,17 @@ export default function DashboardPage() {
           padding: "28px 20px 100px",
         }}
       >
+        {/* Wind-Down Banner for partner's message */}
+        {partnerCheckin && (
+          <WindDownBanner 
+            checkin={partnerCheckin} 
+            partnerName={partnerName} 
+          />
+        )}
+
         {/* === TOP HERO SECTION === */}
-        <div className="animate-fade-up" style={{ marginBottom: "28px" }}>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: "12px",
-            }}
-          >
+        <div className="animate-fade-up mb-7">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             <div>
               <h1
                 className="heading-xl"
@@ -659,7 +729,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+            <div className="flex flex-wrap items-center gap-2 mt-2 md:mt-0">
               {myStreak > 0 && (
                 <div
                   className="badge badge-gold"
@@ -846,8 +916,8 @@ export default function DashboardPage() {
           ].map((stat, i) => (
             <div
               key={i}
-              className="glass glass-hover"
-              style={{ borderRadius: "18px", padding: "18px" }}
+              className="glass glass-hover p-4 md:p-[18px]"
+              style={{ borderRadius: "18px" }}
             >
               <div style={{ fontSize: "20px", marginBottom: "8px" }}>
                 {stat.icon}
@@ -1750,7 +1820,7 @@ export default function DashboardPage() {
       </button>
 
       {/* === LOG MODAL === */}
-      {logModalOpen && (
+       {logModalOpen && (
         <LogModal
           user={user}
           userData={userData}
@@ -1758,6 +1828,20 @@ export default function DashboardPage() {
           today={myToday}
           onClose={() => setLogModalOpen(false)}
           onLogged={() => showToast("Activity logged! 🎉")}
+        />
+      )}
+
+      {/* Wind-Down Modal */}
+      {showWindDownModal && (
+        <WindDownModal
+          user={user}
+          userData={userData}
+          today={myToday}
+          onClose={() => setShowWindDownModal(false)}
+          onSubmitted={() => {
+            showToast("Reflection saved! 🌙");
+            setHasCheckedInToday(true);
+          }}
         />
       )}
 
