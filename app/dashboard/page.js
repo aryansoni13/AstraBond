@@ -317,14 +317,34 @@ export default function DashboardPage() {
   // --- TIMEZONE SELF-HEALING SYNC ---
   useEffect(() => {
     if (!user?.uid || !userData) return;
-    const currentTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    if (userData.timezone !== currentTZ) {
-      console.log("Updating timezone to:", currentTZ);
-      updateDoc(doc(db, "users", user.uid), {
-        timezone: currentTZ,
-      }).catch(err => console.error("Failed to sync timezone:", err));
-    }
-  }, [user?.uid, userData?.timezone]);
+    
+    const syncTimezone = async () => {
+      const currentTZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      // Also check offset to be even more precise (handles manual clock shifts better)
+      const currentOffset = new Date().getTimezoneOffset();
+      
+      if (userData.timezone !== currentTZ || userData.timezoneOffset !== currentOffset) {
+        console.log(`[TimezoneSync] System change detected: ${userData.timezone} -> ${currentTZ}`);
+        try {
+          await updateDoc(doc(db, "users", user.uid), {
+            timezone: currentTZ,
+            timezoneOffset: currentOffset,
+            lastTimezoneSync: serverTimestamp(),
+          });
+          showToast("Timezone synced! 🌍", "success");
+        } catch (err) {
+          console.error("Failed to sync timezone:", err);
+        }
+      }
+    };
+
+    // Sync on mount
+    syncTimezone();
+
+    // Also sync whenever window gets focus (proactive check)
+    window.addEventListener("focus", syncTimezone);
+    return () => window.removeEventListener("focus", syncTimezone);
+  }, [user?.uid, userData?.timezone, userData?.timezoneOffset]);
 
   // Dismiss warning on any activity
   useEffect(() => {

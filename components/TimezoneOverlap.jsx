@@ -59,6 +59,9 @@ export default function TimezoneOverlap({ myTimezone, partnerTimezone, partnerNa
           <p style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text)', fontFamily: 'Syne, sans-serif' }}>
             {getTimeInZone(myTimezone)}
           </p>
+          <p style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            {myTimezone || 'Loading...'}
+          </p>
         </div>
         <div>
           <p style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '4px', letterSpacing: '0.05em' }}>
@@ -66,6 +69,9 @@ export default function TimezoneOverlap({ myTimezone, partnerTimezone, partnerNa
           </p>
           <p style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text)', fontFamily: 'Syne, sans-serif' }}>
             {partnerTimezone ? getTimeInZone(partnerTimezone) : 'Syncing...'}
+          </p>
+          <p style={{ fontSize: '9px', color: 'var(--text-muted)', marginTop: '2px' }}>
+            {partnerTimezone || 'Waiting for partner...'}
           </p>
         </div>
       </div>
