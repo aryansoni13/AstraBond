@@ -76,10 +76,10 @@ sequenceDiagram
 ```mermaid
 erDiagram
     USERS |o--|| COUPLES : "belongs to"
-    COUPLES ||--{ ACTIVITIES : "owns"
-    COUPLES ||--{ CHECKINS : "owns"
-    USERS ||--{ ACTIVITIES : "logs"
-    USERS ||--{ CHECKINS : "submits"
+    COUPLES ||--o{ ACTIVITIES : "owns"
+    COUPLES ||--o{ CHECKINS : "owns"
+    USERS ||--o{ ACTIVITIES : "logs"
+    USERS ||--o{ CHECKINS : "submits"
     USERS ||--o{ NUDGES : "receives"
 ```
 
