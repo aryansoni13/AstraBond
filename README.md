@@ -5,9 +5,41 @@ Log your daily activities, track each other's progress, and grow together — pr
 
 ---
 
-## 🏗️ Technical Architecture
+### 🏮 The Vision
+Bond Tracker was born from the idea that relationships deserve their own dedicated, private space for productivity. While most apps focus on individual tasks, Bond Tracker focuses on the **shared effort** that keeps a relationship strong. Our mission is to provide an aesthetic, distraction-free environment that celebrates small wins and keeps partners connected across time and space.
 
-Bond Tracker is built with a modern, real-time architecture designed for privacy and speed.
+---
+
+## 📖 What is Bond Tracker?
+
+**Bond Tracker** is more than just a logging tool—it's a shared digital space for couples. It focuses on **visibility**, **consistency**, and **emotional connection**, especially for those navigating long-distance relationships or busy schedules.
+
+By logging just a few minutes of "Bond Time" each day, you build a shared history that can be celebrated through streaks and exported as a sentimental PDF report.
+
+---
+
+## 🚀 Getting Started (User Guide)
+
+### 1. Onboarding
+- **First Partner**: Sign up and click "Create a Couple". You'll get an 8-character **Invite Code**.
+- **Second Partner**: Sign up and click "Join a Couple". Enter the code your partner gave you.
+- **Result**: You are now linked! Your dashboard will immediately reflect your partner's status.
+
+### 2. Logging Your First Activity
+- Click the **"+" (Add Activity)** button at the dashboard bottom.
+- Select an **Activity Type** (e.g., *Self-care* or *Learning*).
+- Use the **Duration Slider** (15 mins to 8 hours).
+- Add a **Note** if you want to share specifically what you did.
+- **Sync**: Your partner's dashboard will update within seconds.
+
+### 3. The 9 PM Ritual (Wind-Down)
+Every night after **9:00 PM** (in your local time), the app will prompt you for a **Wind-Down Check-In**. 
+- Rate your day from 1-5 stars. Pick a mood emoji. Write a short message.
+- **Morning Surprise**: Your partner sees your note as a soft, glowing banner the next time they open the app.
+
+---
+
+## 🏗️ Technical Architecture
 
 ### System Overview
 ```mermaid
@@ -20,70 +52,92 @@ graph TD
     DB --- Rules{Security Rules}
 ```
 
+### Dashboard Data Flow
+```mermaid
+sequenceDiagram
+    participant User as Browser
+    participant Hook as useAuth()
+    participant DB as Firestore
+    participant Dashboard as Dashboard Page
+
+    User->>Dashboard: Mounts Dashboard
+    Dashboard->>Hook: Request User & Couple Data
+    Hook->>DB: Listen to /users/{uid}
+    DB-->>Hook: Return coupleId
+    Hook-->>Dashboard: Return User Data
+    Dashboard->>DB: Listen to /couples/{coupleId}
+    Dashboard->>DB: Listen to /activities (where coupleId == X)
+    Dashboard->>DB: Listen to /checkins (unseen by partner)
+    DB-->>Dashboard: Real-time update stream
+    Dashboard->>Dashboard: Re-render with Glassmorphism UI
+```
+
 ### Data Relationship Model
 ```mermaid
 erDiagram
-    USERS ||--? COUPLES : "belongs to"
+    USERS |o--|| COUPLES : "belongs to"
     COUPLES ||--{ ACTIVITIES : "owns"
     COUPLES ||--{ CHECKINS : "owns"
     USERS ||--{ ACTIVITIES : "logs"
     USERS ||--{ CHECKINS : "submits"
-    USERS ||--o NUDGES : "receives"
+    USERS ||--o{ NUDGES : "receives"
 ```
 
 ---
 
-## ✨ Feature Deep-Dive
+## 🧠 Technical Nuances & Logic
 
-### 1. Couple-Only Privacy
-The app uses a unique `coupleId` to scope all data. Firestore Security Rules ensure that no user can see activities or check-ins belonging to another couple.
+### 1. The "Today" Calculation
+In long-distance relationships, "Today" is a moving target. 
+- **The Engine**: App uses a custom `useTodayDate` hook that calculates the "YYYY-MM-DD" string based on the user's specific timezone.
+- **The Result**: If Partner A is on Monday and Partner B is already on Tuesday, the app correctly separates their "Today's Rings" so no data is overwritten or miscalculated.
 
-### 2. Timezone Mirror & Intelligence 🌍
-Accurate tracking for long-distance partners. 
-- **Self-Healing Sync**: The app automatically captures the browser's timezone ID (e.g., `America/New_York`) and saves it to the user's profile.
-- **Visual Mirror**: See your partner's exact local time and activity window, calculated in real-time.
-- **Smart Streaks**: Streaks are calculated based on the user's local "day", ensuring consistency regardless of where they are in the world.
+### 2. Streak Math 🔥
+- A streak is counted if **any** activity is logged on a calendar day.
+- The shared streak reflects your **combined consistency**. If both partners log at least one activity, the "Shared Streak" continues to grow.
 
-### 3. Daily Wind-Down 🌙
-A nightly ritual triggered after 9 PM.
-- **Reflection**: Rate your day (1-5), set a mood, and leave a note.
-- **Morning Surprise**: Your partner sees your note as a soft, glowing banner the next time they open the app.
-
-### 4. Data Ownership & Export 📊
-- **CSV**: Raw data for spreadsheet analysis.
-- **PDF**: A beautiful, print-ready report with themed tables and relationship summaries.
-
-### 5. Instant Nudges 🔔
-Uses **Firebase Cloud Messaging (FCM)**.
-- **In-App**: Instant toast notifications.
-- **Background**: System push notifications even when the tab is closed.
+### 3. Glassmorphism Design
+The UI uses a **High-Contrast Glassmorphism** approach:
+- **Background**: Multi-layered aurora blobs (`.aurora-bg`) with slow, non-linear CSS animations.
+- **Cards**: `backdrop-filter: blur(20px)` with a very subtle `0.08` opacity border to simulate high-end frosted glass.
+- **Typography**: Heavily utilizes **Syne** (a wide, brutalist font) for data points.
 
 ---
 
-## 📁 Project Structure
+## 📁 Accurate Project Structure
 
 ```bash
 bond-tracker/
 ├── app/
-│   ├── layout.js            # Root layout + Google Fonts + Viewport meta
-│   ├── page.js              # Auth gateway (Login/Sign Up)
+│   ├── api/                 # Backend edge functions (Nudges/FCM)
+│   ├── dashboard/           # Main interactive hub + Stats logic
 │   ├── onboarding/          # Couple creation & invite system
-│   └── dashboard/           # Main interactive hub + Stats logic
+│   ├── globals.css          # Design system core (Aurora, Glass, Transitions)
+│   ├── layout.js            # Root layout, Google Fonts, Viewport meta
+│   └── page.js              # Auth gateway (Login/Sign Up)
 ├── components/
-│   ├── Navbar.jsx           # Global nav + Export dashboard
+│   ├── Navbar.jsx           # Global nav + Export dashboard + Real-time sync indicator
 │   ├── TimezoneOverlap.jsx  # The "Mirror" component with diagnostic ID
 │   ├── ProgressRing.jsx     # Animated circular goal trackers
 │   ├── ActivityFeed.jsx     # Real-time list of shared logs
+│   ├── ActivityCalendar.jsx # Relationship heatmap
+│   ├── ActivityPieChart.jsx # Category breakdown visualization
+│   ├── WeeklyChart.jsx      # side-by-side 7-day volume chart
 │   ├── LogModal.jsx         # Bottom-sheet for rapid activity logging
-│   └── WindDownModal.jsx    # Reflection flow
+│   ├── ChallengeModal.jsx   # Interactive shared challenges
+│   ├── GoalModal.jsx        # Visual goal setting
+│   ├── WindDownModal.jsx    # Reflection flow (Rate/Mood/Note)
+│   └── WindDownBanner.jsx   # Morning reveal of partner's note
 ├── hooks/
-│   ├── useAuth.js           # Real-time user profile sync
-│   └── useTodayDate.js      # timezone-shifted relative dates
+│   ├── useAuth.js           # Real-time user profile + active doc listener
+│   ├── useInactivityLogout.js # Auto-logout security logic (15 min)
+│   └── useTodayDate.js      # timezone-shifted relative date engine
 ├── lib/
-│   ├── firebase.js          # Core SDK initialization
-│   └── exportUtils.js       # Blob & PDF generation engine
-├── firestore.rules          # THE privacy firewall (Couple-scoped access)
-└── firestore.indexes.json   # High-performance composite query indexes
+│   ├── firebase.js          # Core SDK initialization (Client)
+│   └── exportUtils.js       # JSON -> Blob -> PDF/CSV generation engine
+├── firestore.rules          # THE privacy firewall (Couple-scoped isolation)
+├── firestore.indexes.json   # High-performance composite query indexes
+└── firebase.json             # Service-specific project configuration
 ```
 
 ---
@@ -108,32 +162,6 @@ match /activities/{activityId} {
     get(/databases/$(database)/documents/users/$(request.auth.uid)).data.coupleId == resource.data.coupleId;
 }
 ```
-
----
-
-## 🚀 Setup & Deployment
-
-### 1. Prerequisites
-- **Node.js 18+**
-- **Firebase Project** with Auth & Firestore enabled.
-
-### 2. Environment Variables
-Create a `.env.local` with your Firebase config:
-```bash
-NEXT_PUBLIC_FIREBASE_API_KEY=...
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
-# ... (all standard Firebase fields)
-```
-
-### 3. Vercel Deployment
-Push to GitHub and connect to Vercel. Ensure you add your environment variables in the Vercel Dashboard.
-
----
-
-## 🎨 Design Guidelines
-- **Typography**: Syne (Headings), Manrope (Body).
-- **Theme**: Deep space dark mode (`#030308`) with Glassmorphism.
-- **Accents**: Neon Cyan (`#00d4ff`) and Coral (`#ff6b6b`).
 
 ---
 
