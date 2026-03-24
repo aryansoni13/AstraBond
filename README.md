@@ -5,184 +5,136 @@ Log your daily activities, track each other's progress, and grow together — pr
 
 ---
 
-## ✨ Features
+## 🏗️ Technical Architecture
 
-- **Couple-only privacy** — only you and your partner see each other's data
-- **Real-time sync** — activities appear instantly across both devices
-- **Daily Wind-Down Check-In** — evening prompt to rate your day, set a mood emoji, and leave a love note
-- **Relationship Data Export** — download your entire history as a CSV or a beautiful PDF report
-- **Timezone Intelligence** — accurate "today" and streak tracking for long-distance partners
-- **Responsive Mobile Layout** — seamless experience on phones with adaptive fluid grids and modals
-- **Daily progress rings** — animated circular trackers for each partner
-- **7-day bar chart** — side-by-side weekly overview
-- **Activity types** — Work, Exercise, Learning, Creative, Self-care, Social, Chores, Other
-- **Duration slider** — log 15 min → 8 hrs with a smooth slider
-- **Streak counter** — 🔥 tracks your daily consistency
-- **Partner status panel** — see what your partner logged today
-- **Today's mix breakdown** — percentage bars per activity category
-- **Invite system** — share an 8-character code to connect couples
-- **Multiple couples supported** — each couple only sees their own data
-- **Nudges** — instantly ping your partner with an FCM push notification and toast
+Bond Tracker is built with a modern, real-time architecture designed for privacy and speed.
+
+### System Overview
+```mermaid
+graph TD
+    UserA[Partner A] <--> App[Bond Tracker App]
+    UserB[Partner B] <--> App
+    App <--> Auth[Firebase Auth]
+    App <--> DB[(Cloud Firestore)]
+    App <--> FCM[Firebase Cloud Messaging]
+    DB --- Rules{Security Rules}
+```
+
+### Data Relationship Model
+```mermaid
+erDiagram
+    USERS ||--? COUPLES : "belongs to"
+    COUPLES ||--{ ACTIVITIES : "owns"
+    COUPLES ||--{ CHECKINS : "owns"
+    USERS ||--{ ACTIVITIES : "logs"
+    USERS ||--{ CHECKINS : "submits"
+    USERS ||--o NUDGES : "receives"
+```
 
 ---
 
-## 🚀 Quick Start
+## ✨ Feature Deep-Dive
 
-### 1. Install dependencies
+### 1. Couple-Only Privacy
+The app uses a unique `coupleId` to scope all data. Firestore Security Rules ensure that no user can see activities or check-ins belonging to another couple.
 
-```bash
-npm install
-```
+### 2. Timezone Mirror & Intelligence 🌍
+Accurate tracking for long-distance partners. 
+- **Self-Healing Sync**: The app automatically captures the browser's timezone ID (e.g., `America/New_York`) and saves it to the user's profile.
+- **Visual Mirror**: See your partner's exact local time and activity window, calculated in real-time.
+- **Smart Streaks**: Streaks are calculated based on the user's local "day", ensuring consistency regardless of where they are in the world.
 
-### 2. Set up Firebase
+### 3. Daily Wind-Down 🌙
+A nightly ritual triggered after 9 PM.
+- **Reflection**: Rate your day (1-5), set a mood, and leave a note.
+- **Morning Surprise**: Your partner sees your note as a soft, glowing banner the next time they open the app.
 
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Create a new project
-3. Enable **Authentication** → Email/Password
-4. Enable **Firestore Database** → Start in production mode
-5. Go to **Project Settings** → **General** → scroll to **Your apps** → Add a **Web app**
-6. Copy the config values
+### 4. Data Ownership & Export 📊
+- **CSV**: Raw data for spreadsheet analysis.
+- **PDF**: A beautiful, print-ready report with themed tables and relationship summaries.
 
-### 3. Configure environment variables
-
-```bash
-cp .env.local.example .env.local
-```
-
-Open `.env.local` and fill in your Firebase values:
-
-```
-NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key
-NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
-NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
-NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
-```
-
-### 4. Deploy Firestore rules & indexes
-
-Install Firebase CLI if you haven't:
-```bash
-npm install -g firebase-tools
-firebase login
-firebase use --add   # select your project
-```
-
-Deploy rules and indexes (this is required for Check-ins and Export!):
-```bash
-firebase deploy --only firestore
-```
-
-### 5. Run locally
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) 🎉
+### 5. Instant Nudges 🔔
+Uses **Firebase Cloud Messaging (FCM)**.
+- **In-App**: Instant toast notifications.
+- **Background**: System push notifications even when the tab is closed.
 
 ---
 
 ## 📁 Project Structure
 
-```
+```bash
 bond-tracker/
 ├── app/
-│   ├── globals.css          # Design system — aurora, glass, buttons
-│   ├── layout.js            # Root layout + Google Fonts + Viewport Ext
-│   ├── page.js              # Auth page (Login / Sign Up)
-│   ├── onboarding/
-│   │   └── page.js          # Create or join a couple
-│   └── dashboard/
-│       └── page.js          # Main dashboard (real-time)
+│   ├── layout.js            # Root layout + Google Fonts + Viewport meta
+│   ├── page.js              # Auth gateway (Login/Sign Up)
+│   ├── onboarding/          # Couple creation & invite system
+│   └── dashboard/           # Main interactive hub + Stats logic
 ├── components/
-│   ├── Navbar.jsx            # Top nav + Export Tools
-│   ├── ProgressRing.jsx      # Animated SVG ring for daily goal
-│   ├── ActivityFeed.jsx      # Scrollable activity list
-│   ├── WeeklyChart.jsx       # Recharts bar chart (7 days)
-│   ├── LogModal.jsx          # Bottom-sheet activity logger
-│   ├── WindDownModal.jsx     # Evening check-in form
-│   └── WindDownBanner.jsx    # Unread partner check-in display
+│   ├── Navbar.jsx           # Global nav + Export dashboard
+│   ├── TimezoneOverlap.jsx  # The "Mirror" component with diagnostic ID
+│   ├── ProgressRing.jsx     # Animated circular goal trackers
+│   ├── ActivityFeed.jsx     # Real-time list of shared logs
+│   ├── LogModal.jsx         # Bottom-sheet for rapid activity logging
+│   └── WindDownModal.jsx    # Reflection flow
 ├── hooks/
-│   ├── useAuth.js            # Firebase auth + user data hook
-│   └── useTodayDate.js       # Timezone-aware date calculations
+│   ├── useAuth.js           # Real-time user profile sync
+│   └── useTodayDate.js      # timezone-shifted relative dates
 ├── lib/
-│   ├── firebase.js           # Firebase app API initialization
-│   └── exportUtils.js        # CSV & PDF generation logic
-├── firestore.rules           # Security rules (couple-scoped & checkins)
-├── firestore.indexes.json    # Composite indexes for queries
-├── firebase.json             # Firebase project config
-├── .env.local.example        # Environment variable template
-└── README.md
+│   ├── firebase.js          # Core SDK initialization
+│   └── exportUtils.js       # Blob & PDF generation engine
+├── firestore.rules          # THE privacy firewall (Couple-scoped access)
+└── firestore.indexes.json   # High-performance composite query indexes
 ```
 
 ---
 
-## 🔐 How Privacy Works
+## 🔐 Database Schema & Security
 
-Each couple gets a unique `coupleId`. All activities include this ID.  
-Firestore security rules ensure:
+### Firestore Collections
+| Collection | Role | Key Fields |
+|------------|------|------------|
+| `users` | User Profiles | `uid`, `coupleId`, `timezone`, `color`, `lastActive` |
+| `couples` | Join logic | `members` (UID array), `inviteCode`, `thinkingOfYou` |
+| `activities` | Core logs | `userId`, `coupleId`, `type`, `duration`, `date` |
+| `checkins` | Nightly notes | `userId`, `coupleId`, `rating`, `mood`, `note`, `seenByPartner` |
+| `nudges` | Pings | `toUserId`, `fromUserId`, `createdAt` |
 
-- Users can only read/write **their own** user profile
-- Couple documents can only be read/updated by **current members**
-- Activities and Check-ins are only readable by members of the **same couple**
-- No cross-couple data leakage — even if 100 couples use the app
-
----
-
-## 🎨 Design System
-
-| Token         | Value              | Use                        |
-|---------------|--------------------|----------------------------|
-| `--cyan`      | `#00d4ff`          | Primary partner color       |
-| `--coral`     | `#ff6b6b`          | Secondary partner color     |
-| `--gold`      | `#ffd166`          | Streak / celebration        |
-| `--bg`        | `#030308`          | Page background             |
-| `--card`      | `#0f0f1e`          | Glass card base             |
-| Font Display  | Syne 700–800       | Headings, numbers, labels   |
-| Font Body     | Manrope 400–600    | Paragraphs, inputs, UI      |
+### Security Philosophy
+The `firestore.rules` file enforces **Couple-Scoped Isolation**.  
+Example Rule Snippet:
+```javascript
+match /activities/{activityId} {
+  allow read: if request.auth != null && 
+    get(/databases/$(database)/documents/users/$(request.auth.uid)).data.coupleId == resource.data.coupleId;
+}
+```
 
 ---
 
-## 🌐 Deploying to Vercel
+## 🚀 Setup & Deployment
 
+### 1. Prerequisites
+- **Node.js 18+**
+- **Firebase Project** with Auth & Firestore enabled.
+
+### 2. Environment Variables
+Create a `.env.local` with your Firebase config:
 ```bash
-# Push to GitHub, then import in Vercel dashboard
-# Add all NEXT_PUBLIC_FIREBASE_* environment variables in Vercel settings
-# Deploy!
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+# ... (all standard Firebase fields)
 ```
 
-Or with CLI:
-```bash
-npm i -g vercel
-vercel --prod
-```
+### 3. Vercel Deployment
+Push to GitHub and connect to Vercel. Ensure you add your environment variables in the Vercel Dashboard.
 
 ---
 
-## 📦 Tech Stack
-
-| Layer      | Tech                        |
-|------------|-----------------------------|
-| Framework  | Next.js 14 (App Router)     |
-| Auth & DB  | Firebase v10 (Auth + Firestore) |
-| Charts     | Recharts                    |
-| Styling    | Tailwind CSS + custom CSS   |
-| Icons      | Lucide React + inline SVG   |
-| Fonts      | Google Fonts (Syne, Manrope)|
-| Deploy     | Vercel (recommended)        |
+## 🎨 Design Guidelines
+- **Typography**: Syne (Headings), Manrope (Body).
+- **Theme**: Deep space dark mode (`#030308`) with Glassmorphism.
+- **Accents**: Neon Cyan (`#00d4ff`) and Coral (`#ff6b6b`).
 
 ---
 
-## 💡 Tips
-
-- The **first person** to create a couple gets **cyan** color
-- The **partner who joins** gets **coral** color
-- The invite code is **8 characters**, alphanumeric
-- Daily goal is set to **4 hours (240 min)** — you can change `DAILY_GOAL_MINUTES` in `dashboard/page.js`
-- The streak counts days where you logged **any** activity
-
----
-
-Made with 💙🧡 for couples who grow together.
+Made with 💜 for couples everywhere.
