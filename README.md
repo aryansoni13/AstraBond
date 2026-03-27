@@ -1,4 +1,4 @@
-# 💜 Bond Tracker
+# 💜 Astra Bond
 
 A sleek, aesthetic couples productivity tracker built with **Next.js 14** and **Firebase**.  
 Log your daily activities, track each other's progress, and grow together — privately, beautifully.
